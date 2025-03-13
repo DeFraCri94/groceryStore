@@ -1,20 +1,22 @@
-import {initializeApp} from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"
-import {getDatabase, ref, push, onValue, remove} from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js"
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
 const appSettings = {
   databaseURL: "https://grocery-store-fab17-default-rtdb.firebaseio.com/"
-}
+};
 
 const app = initializeApp(appSettings);
 const database = getDatabase(app);
-const groceriesInDB = ref(database, 'groceries');
+const groceriesInDB = ref(database, "groceries");
 
-const add = document.getElementById('add-button');
-const input = document.getElementById('input-field');
-const list = document.getElementById('shopping-list');
-const container = document.querySelector('.container');
+const add = document.getElementById("add-button");
+const input = document.getElementById("input-field");
+const list = document.getElementById("shopping-list");
+const container = document.querySelector(".container");
 
-add.addEventListener('click', () => {
+let deleteButton;
+
+add.addEventListener("click", () => {
   let inputValue = input.value.trim();
   if (inputValue) {
     push(groceriesInDB, inputValue);
@@ -32,57 +34,64 @@ onValue(groceriesInDB, (snapshot) => {
       renderToList(item);
     });
 
-    appendButton(); // Ensure button appears if items exist
+    appendButton();
   } else {
-    removeButton(); // Remove the button if no items are present
+    removeButton();
   }
 });
 
-function clearShoppingList(){
-  list.innerHTML = '';
+function clearShoppingList() {
+  list.innerHTML = "";
 }
 
-function renderToList(item){
+function renderToList(item) {
   let itemID = item[0];
   let itemValue = item[1];
 
   let newElement = document.createElement("li");
   newElement.textContent = itemValue;
+  newElement.setAttribute("data-id", itemID);
   list.append(newElement);
 
   newElement.addEventListener("click", () => {
-    newElement.classList.add("selected-item");
+    newElement.classList.toggle("selected-item");
 
-    let confirmDeleteBtn = document.querySelector('.confirm-delete-button');
-    if (confirmDeleteBtn) {
-      confirmDeleteBtn.disabled = false;
-      confirmDeleteBtn.addEventListener('dblclick', () => {
-        let locationOfItem = ref(database, `groceries/${itemID}`);
-        remove(locationOfItem);
-      });
-    }
+    let selectedItems = document.querySelectorAll(".selected-item");
+    deleteButton.disabled = selectedItems.length === 0;
   });
 }
 
-function clearInput(){
-  input.value = '';
+function clearInput() {
+  input.value = "";
 }
 
-function appendButton(){
-  if (!container.querySelector('.confirm-delete-button')) {
-    let newButton = document.createElement('button');
+function appendButton() {
+  if (!container.querySelector(".confirm-delete-button")) {
+    deleteButton = document.createElement("button");
+    deleteButton.textContent = "Delete From List";
+    deleteButton.classList.add("confirm-delete-button");
+    deleteButton.disabled = true;
 
-    newButton.textContent = "Delete From List";
-    newButton.classList.add('confirm-delete-button');
-    newButton.disabled = true;
-
-    container.appendChild(newButton);
+    deleteButton.addEventListener("dblclick", deleteSelectedItems);
+    container.appendChild(deleteButton);
   }
 }
 
-function removeButton(){
-  let existingButton = container.querySelector('.confirm-delete-button');
+function removeButton() {
+  let existingButton = container.querySelector(".confirm-delete-button");
   if (existingButton) {
     existingButton.remove();
   }
+}
+
+function deleteSelectedItems() {
+  let selectedItems = document.querySelectorAll(".selected-item");
+
+  selectedItems.forEach((item) => {
+    let itemID = item.getAttribute("data-id");
+    let itemRef = ref(database, `groceries/${itemID}`);
+    remove(itemRef); 
+  });
+
+  deleteButton.disabled = true;
 }
