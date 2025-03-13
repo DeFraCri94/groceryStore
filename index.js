@@ -25,13 +25,21 @@ add.addEventListener("click", () => {
 });
 
 onValue(groceriesInDB, (snapshot) => {
+  let selectedItems = document.querySelectorAll(".selected-item");
+  let selectedIDs = new Set();
+
+  // Store selected item IDs before clearing the list
+  selectedItems.forEach((item) => {
+    selectedIDs.add(item.getAttribute("data-id"));
+  });
+
   clearShoppingList();
 
   if (snapshot.exists()) {
     let listItemsArray = Object.entries(snapshot.val());
 
     listItemsArray.forEach((item) => {
-      renderToList(item);
+      renderToList(item, selectedIDs);
     });
 
     appendButton();
@@ -40,17 +48,23 @@ onValue(groceriesInDB, (snapshot) => {
   }
 });
 
+
 function clearShoppingList() {
   list.innerHTML = "";
 }
 
-function renderToList(item) {
+function renderToList(item, selectedIDs) {
   let itemID = item[0];
   let itemValue = item[1];
 
   let newElement = document.createElement("li");
   newElement.textContent = itemValue;
   newElement.setAttribute("data-id", itemID);
+
+  if (selectedIDs.has(itemID)) {
+    newElement.classList.add("selected-item");
+  }
+
   list.append(newElement);
 
   newElement.addEventListener("click", () => {
@@ -60,6 +74,7 @@ function renderToList(item) {
     deleteButton.disabled = selectedItems.length === 0;
   });
 }
+
 
 function clearInput() {
   input.value = "";
